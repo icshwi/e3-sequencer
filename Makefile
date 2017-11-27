@@ -100,6 +100,9 @@ uninstall: conf
 build: conf
 	$(QUIET) make $(M_OPTIONS) build
 
+snc:
+	$(QUIET) make $(M_OPTIONS) snc
+
 ## clean, build, and install again.
 rebuild: clean build install
 
@@ -160,10 +163,6 @@ env:
 conf:
 	$(QUIET) install -m 644 $(TOP)/$(ESS_MODULE_MAKEFILE)  $(EPICS_MODULE_SRC_PATH)/
 
-# sigh..., and fortunately, seq use the standard Perl only....
-#
-#seq_release:
-#	perl -CSD $(SEQ_RELEASE)/$@.pl ${LIBVERSION} > $(SEQ_RELEASE)/$@.h
 
 epics:
 	@echo "EPICS_BASE=$(COMMUNITY_EPICS_BASE)"   > $(TOP)/$(EPICS_MODULE_SRC_PATH)/configure/RELEASE

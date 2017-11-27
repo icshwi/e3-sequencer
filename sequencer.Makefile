@@ -1,8 +1,32 @@
+#
+#  Copyright (c) 2017 - Present  European Spallation Source ERIC
+#
+#  The program is free software: you can redistribute
+#  it and/or modify it under the terms of the GNU General Public License
+#  as published by the Free Software Foundation, either version 2 of the
+#  License, or any newer version.
+#
+#  This program is distributed in the hope that it will be useful, but WITHOUT
+#  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+#  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+#  more details.
+#
+#  You should have received a copy of the GNU General Public License along with
+#  this program. If not, see https://www.gnu.org/licenses/gpl-2.0.txt
+#
+# Author  : Jeong Han Lee
+# email   : han.lee@esss.se
+# Date    : 
+# version : 
+
+# Get where_am_I before include driver.makefile.
+# After driver.makefile, where_am_I is the epics base,
+# so we cannot use it
+
+
 where_am_I := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 include $(REQUIRE_TOOLS)/driver.makefile
-
-
 
 SEQUENCER:=src
 SEQUENCERDEV:=$(SEQUENCER)/dev
@@ -17,10 +41,13 @@ USR_INCLUDES += -I$(where_am_I)/$(SEQUENCERSEQUENCER)
 USR_INCLUDES += -I$(where_am_I)/$(SEQUENCERSNC)
 
 
-SEQ_VER=2.1.21
+# LIBVERSION is defined in configure/CONFIG
+# is transfered via Makefile
+# 
+SEQ_VER=$(LIBVERSION)
 
 
-DBDS = $(SEQUENCERDEV)/devSequencer.dbd
+DBDS     = $(SEQUENCERDEV)/devSequencer.dbd
 
 HEADERS += $(SEQUENCERPV)/pv.h
 HEADERS += $(SEQUENCERPV)/pvAlarm.h
@@ -29,19 +56,6 @@ HEADERS += $(SEQUENCERPV)/pvType.h
 HEADERS += $(SEQUENCERSEQ)/seqCom.h
 HEADERS += $(SEQUENCERSEQ)/seqStats.h
 HEADERS += seq_release.h
-
-
-devSequencer.o: seq_release.h lemon
-
-seq_SRCS += seq_main.c
-seq_SRCS += seq_task.c
-seq_SRCS += seq_ca.c
-seq_SRCS += seq_if.c
-seq_SRCS += seq_mac.c
-seq_SRCS += seq_prog.c
-seq_SRCS += seq_qry.c
-seq_SRCS += seq_cmd.c
-seq_SRCS += seq_queue.c
 
 
 SOURCES += $(SEQUENCERSEQ)/seq_main.c
@@ -61,50 +75,64 @@ SOURCES += $(SEQUENCERPV)/pvCa.cc
 SOURCES += $(SEQUENCERDEV)/devSequencer.c
 
 
-seq_release.h:
+BINS_linux += lemon
+BINS += snc
+
+
+USR_CPPFLAGS += -DPVCA
+
+
+vpath %.c   $(where_am_I)/$(SEQUENCERSNC)
+vpath %.h   $(where_am_I)/$(SEQUENCERSNC)
+
+vpath %.lem $(where_am_I)/$(SEQUENCERSNC)
+vpath %.lt  $(where_am_I)/$(SEQUENCERSNC)
+vpath %.re  $(where_am_I)/$(SEQUENCERSNC)
+
+
+devSequencer$(DEP): seq_release.h $(where_am_I)snc
+
+seq_release.h: 
 	$(RM) $@
 	$(PERL) $(where_am_I)/$(SEQUENCERSEQ)/seq_release.pl $(SEQ_VER) > $@
 
 
-# #BINS += snc
-# # STARTUPS = -none-
+# We only use linux, so I added $(OP_SYS_LDFLAGS) $(ARCH_DEP_LDFLAGS)
+$(where_am_I)snc: lexer.c $(patsubst %.c,%.o, lexer.c snl.c main.c expr.c var_types.c analysis.c gen_code.c gen_ss_code.c gen_tables.c builtin.c  sym_table.c )
+	@echo ""
+	@echo ">>>>> snc Init "
+	$(CCC) -o $@ -L $(EPICS_BASE_LIB) -Wl,-rpath,$(EPICS_BASE_LIB) $(OP_SYS_LDFLAGS) $(ARCH_DEP_LDFLAGS)  $(filter %.o, $^) -lCom -ldbRecStd -ldbCore -lca 
+	@echo "<<<<< snc Done"
+	@echo ""
 
-# vpath %.c  $(where_am_I)/$(SEQUENCERSNC)
-# vpath %.h  $(where_am_I)/$(SEQUENCERSNC)
+lexer.c: snl.re snl.h
+	re2c -s -b -o $@ $<
 
+snl.c snl.h: $(addprefix $(where_am_I)/$(SEQUENCERSNC)/, snl.lem snl.lt) $(where_am_I)lemon
+	$(RM) snl.c snl.h
+	$(where_am_I)lemon o=. $<
 
-# O.snc/%.o: %.c
-# 	${QUIET}${MKDIR} -p $(dir $@)
-# 	$(COMPILE.c) -c -o $@ $<
-
-# O.snc/snl.o: O.snc/snl.c
-# 	${QUIET}${MKDIR} -p $(dir $@)
-# 	$(COMPILE.c) -c -o $@ $<
-
-# USR_INCLUDES += -IO.snc
-# USR_CPPFLAGS += -DPVCA
-
-
-# snc: $(addprefix O.snc/,$(patsubst %.c,%.o,snl.c main.c expr.c var_types.c analysis.c gen_code.c gen_ss_code.c gen_tables.c sym_table.c builtin.c lexer.c))
-# 	${QUIET}${MKDIR} -p $(dir $@)
-# 	#$(LINK.cpp) $(filter %.o, $^)
-# 	$(CCC) -o $@ -L ${EPICS_BASE_LIB} -Wl,-rpath,${EPICS_BASE_LIB} ${ARCH_DEP_LDFLAGS} -lCom $(filter %.o, $^)
-
-
-# # 
-# # is re2c the target indepdent?
-# #
-# lexer.c: $(where_am_I)/$(SEQUENCERSEQ)/snl.re O.snc/snl.h
-# 	re2c -s -b -o $@ $<
 
 # 
 # lemon is called in the host, so the hard-coded gcc, which is the host
-# If one changes it to $(COMPILE.c), the compiling process fails. 
-lemon: $(where_am_I)/$(SEQUENCERLEMON)/lemon.c
-	gcc  -o $@ $^
+# If one changes it to $(COMPILE.c), the compiling process fails.
+# driver.makefile is trying to find the binary in $(where_am_I)
+# not in O.3.15.5_linux-x86_64. So I copy it to $(where_am_I)
+# OR we have to remove ../ prefix in driver.makefile as 
+# ${INSTALL_BINS}: $(addprefix ../,$(filter-out /%,${BINS})) $(filter /%,${BINS})
+#	@echo "Installing binaries $^ to $(@D)"
+#	$(INSTALL) -d -m555 $^ $(@D)
+#
+#
+#
+# $(LINK.c) doesn't work, because it use driver.makefile instead of EPICS BASE
+#
+$(where_am_I)lemon: $(where_am_I)/$(SEQUENCERLEMON)/lemon.c
+	@echo ""
+	@echo ">>>>> lemon Init "
+	$(RM) $(where_am_I)$@
+	$(COMPILE.c) -o $@ $(OP_SYS_CFLAGS) $(ARCH_DEP_CFLAGS) $^
+	@echo "<<<<< lemon Done "
+	@echo ""
 
-# O.snc/snl.c O.snc/snl.h: $(addprefix $(where_am_I)/$(SEQUENCERSEQ)/, snl.lem snl.lt) lemon
-# 	${QUIET}${MKDIR} -p $(dir $@)
-# 	$(RM) O.snc/snl.c O.snc/snl.h
-# 	./lemon o=O.snc $<
 
