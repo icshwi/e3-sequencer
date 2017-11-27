@@ -1,4 +1,4 @@
-EPICS_MODULE_NAME:=sequencer
+EPICS_MODULE_NAME:=seq
 # This is the module source tag
 # *) individual tags
 #    export EPICS_MODULE_TAG:=tags/1.1.1
@@ -6,7 +6,7 @@ EPICS_MODULE_NAME:=sequencer
 #    export EPICS_MODULE_TAG:=master
 # *) individual hash 
 export EPICS_MODULE_TAG:=R2-1-21
-export EPICS_MODULE_SRC_PATH:=$(EPICS_MODULE_NAME)
+export EPICS_MODULE_SRC_PATH:=$(EPICS_MODULE_NAME)uencer
 ESS_MODULE_MAKEFILE:=$(EPICS_MODULE_NAME).Makefile
 export PROJECT:=$(EPICS_MODULE_NAME)
 export LIBVERSION:=2.1.21
