@@ -100,8 +100,8 @@ uninstall: conf
 build: conf
 	$(QUIET) make $(M_OPTIONS) build
 
-snc:
-	$(QUIET) make $(M_OPTIONS) snc
+# snc:
+# 	$(QUIET) make $(M_OPTIONS) snc
 
 ## clean, build, and install again.
 rebuild: clean build install
@@ -126,6 +126,9 @@ git-submodule-sync:
 $(EPICS_MODULE_SRC_PATH): 
 	$(QUIET) $(git_update)
 	cd $@ && git checkout $(EPICS_MODULE_TAG)
+
+checkout: 
+	cd $(EPICS_MODULE_SRC_PATH) && git checkout $(EPICS_MODULE_TAG)
 
 
 $(E3_ENV_NAME): 
@@ -173,7 +176,7 @@ epics:
 epics-clean:
 	sudo -E bash -c "$(MAKE) -C $(EPICS_MODULE_SRC_PATH) clean"
 
-.PHONY: env $(E3_ENV_NAME) $(EPICS_MODULE_SRC_PATH) git-submodule-sync init help help2 build clean install uninstall conf rebuild epics epics-clean
+.PHONY: env $(E3_ENV_NAME) $(EPICS_MODULE_SRC_PATH) git-submodule-sync init help help2 build clean install uninstall conf rebuild epics epics-clean checkout
 
 
 
