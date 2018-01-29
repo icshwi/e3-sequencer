@@ -26,7 +26,7 @@
 
 where_am_I := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
-include $(REQUIRE_TOOLS)/driver.makefile
+include $(E3_REQUIRE_TOOLS)/driver.makefile
 
 SEQUENCER:=src
 SEQUENCERDEV:=$(SEQUENCER)/dev
@@ -136,3 +136,4 @@ $(where_am_I)lemon: $(where_am_I)/$(SEQUENCERLEMON)/lemon.c
 	@echo ""
 
 
+db:
