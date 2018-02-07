@@ -35,6 +35,8 @@ SEQUENCERPV:=$(SEQUENCER)/pv
 SEQUENCERSEQ:=$(SEQUENCER)/seq
 SEQUENCERSNC:=$(SEQUENCER)/snc
 
+
+USR_INCLUDES += -I$(COMMON_DIR)
 USR_INCLUDES += -I$(where_am_I)/$(SEQUENCERCOMMON)
 USR_INCLUDES += -I$(where_am_I)/$(SEQUENCERPV)
 USR_INCLUDES += -I$(where_am_I)/$(SEQUENCERSEQUENCER)
@@ -55,7 +57,7 @@ HEADERS += $(SEQUENCERPV)/pvType.h
 
 HEADERS += $(SEQUENCERSEQ)/seqCom.h
 HEADERS += $(SEQUENCERSEQ)/seqStats.h
-HEADERS += seq_release.h
+HEADERS += $(COMMON_DIR)/seq_release.h
 
 
 SOURCES += $(SEQUENCERSEQ)/seq_main.c
@@ -75,8 +77,8 @@ SOURCES += $(SEQUENCERPV)/pvCa.cc
 SOURCES += $(SEQUENCERDEV)/devSequencer.c
 
 
-BINS_linux += lemon
-BINS += snc
+BINS += O.$(T_A)/lemon
+BINS += O.$(T_A)/snc
 
 
 USR_CPPFLAGS += -DPVCA
@@ -90,15 +92,16 @@ vpath %.lt  $(where_am_I)/$(SEQUENCERSNC)
 vpath %.re  $(where_am_I)/$(SEQUENCERSNC)
 
 
-devSequencer$(DEP): seq_release.h $(where_am_I)snc
+devSequencer$(DEP): $(COMMON_DIR)/seq_release.h O.${EPICSVERSION}_$(T_A)/snc
 
-seq_release.h: 
+$(COMMON_DIR)/seq_release.h:
+	echo "$(COMMON_DIR) O.${EPICSVERSION}_$(T_A)"
 	$(RM) $@
 	$(PERL) $(where_am_I)/$(SEQUENCERSEQ)/seq_release.pl $(SEQ_VER) > $@
 
 
 # We only use linux, so I added $(OP_SYS_LDFLAGS) $(ARCH_DEP_LDFLAGS)
-$(where_am_I)snc: lexer.c $(patsubst %.c,%.o, lexer.c snl.c main.c expr.c var_types.c analysis.c gen_code.c gen_ss_code.c gen_tables.c builtin.c  sym_table.c )
+O.${EPICSVERSION}_$(T_A)/snc: lexer.c $(patsubst %.c,%.o, lexer.c snl.c main.c expr.c var_types.c analysis.c gen_code.c gen_ss_code.c gen_tables.c builtin.c  sym_table.c )
 	@echo ""
 	@echo ">>>>> snc Init "
 	$(CCC) -o $@ -L $(EPICS_BASE_LIB) -Wl,-rpath,$(EPICS_BASE_LIB) $(OP_SYS_LDFLAGS) $(ARCH_DEP_LDFLAGS)  $(filter %.o, $^) -lCom -ldbRecStd -ldbCore -lca 
@@ -108,9 +111,9 @@ $(where_am_I)snc: lexer.c $(patsubst %.c,%.o, lexer.c snl.c main.c expr.c var_ty
 lexer.c: snl.re snl.h
 	re2c -s -b -o $@ $<
 
-snl.c snl.h: $(addprefix $(where_am_I)/$(SEQUENCERSNC)/, snl.lem snl.lt) $(where_am_I)lemon
+snl.c snl.h: $(addprefix $(where_am_I)/$(SEQUENCERSNC)/, snl.lem snl.lt) lemon
 	$(RM) snl.c snl.h
-	$(where_am_I)lemon o=. $<
+	O.${EPICSVERSION}_$(T_A)/lemon o=. $<
 
 
 # 
@@ -127,11 +130,11 @@ snl.c snl.h: $(addprefix $(where_am_I)/$(SEQUENCERSNC)/, snl.lem snl.lt) $(where
 #
 # $(LINK.c) doesn't work, because it use driver.makefile instead of EPICS BASE
 #
-$(where_am_I)lemon: $(where_am_I)/$(SEQUENCERLEMON)/lemon.c
+lemon: $(where_am_I)/$(SEQUENCERLEMON)/lemon.c
 	@echo ""
 	@echo ">>>>> lemon Init "
-	$(RM) $(where_am_I)$@
-	$(COMPILE.c) -o $@ $(OP_SYS_CFLAGS) $(ARCH_DEP_CFLAGS) $^
+	$(RM) O.${EPICSVERSION}_$(T_A)/$@
+	$(COMPILE.c) -o O.${EPICSVERSION}_$(T_A)/$@ $(OP_SYS_CFLAGS) $(ARCH_DEP_CFLAGS) $^
 	@echo "<<<<< lemon Done "
 	@echo ""
 
