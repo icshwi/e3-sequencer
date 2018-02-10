@@ -1,0 +1,30 @@
+perl -CSD ../seq_release.pl 2.1.21 > ../O.Common/seq_release.h
+
+
+
+1) compile lemon  in linux-x86_64/bin
+   compile lemon in linux-ppc64e6500/
+
+   install both of them into 
+   bin/linux-x86_64/lemon
+   bin/linux-ppc64e6500/lemon
+   
+
+2) use /testing/epics/base-3.15.5/epics-modules/seq/bin/linux-x86_64/lemon
+
+  to handle snl.lem
+
+  re2c -s -b -o lexer.c ../snl.re
+
+  lexer.c is compiling...
+
+
+  then compile snc in linux-x86_64, and install it
+  
+
+/testing/epics/base-3.15.5/epics-modules/seq/bin/linux-x86_64/lemon o=. ../snl.lem
+3 parsing conflicts.
+re2c -s -b -o lexer.c ../snl.re
+
+  then compile snc in linux-ppc64e6500 and install in
+Installing created executable /testing/epics/base-3.15.5/epics-modules/seq/bin/linux-ppc64e6500/snc

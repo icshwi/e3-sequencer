@@ -1,4 +1,5 @@
 #
+#  Copyright (c) 2018 - Present  Jeong Han Lee
 #  Copyright (c) 2017 - Present  European Spallation Source ERIC
 #
 #  The program is free software: you can redistribute
@@ -16,7 +17,7 @@
 #
 # Author  : Jeong Han Lee
 # email   : han.lee@esss.se
-# Date    : 
+# Date    : Saturday, February 10 18:40:25 CET 2018
 # version : 
 
 # Get where_am_I before include driver.makefile.
@@ -28,12 +29,12 @@ where_am_I := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 include $(E3_REQUIRE_TOOLS)/driver.makefile
 
-SEQUENCER:=src
-SEQUENCERDEV:=$(SEQUENCER)/dev
-SEQUENCERLEMON:=$(SEQUENCER)/lemon
-SEQUENCERPV:=$(SEQUENCER)/pv
-SEQUENCERSEQ:=$(SEQUENCER)/seq
-SEQUENCERSNC:=$(SEQUENCER)/snc
+SEQUENCER      :=src
+SEQUENCERDEV   :=$(SEQUENCER)/dev
+SEQUENCERLEMON :=$(SEQUENCER)/lemon
+SEQUENCERPV    :=$(SEQUENCER)/pv
+SEQUENCERSEQ   :=$(SEQUENCER)/seq
+SEQUENCERSNC   :=$(SEQUENCER)/snc
 
 
 USR_INCLUDES += -I$(COMMON_DIR)
@@ -77,31 +78,43 @@ SOURCES += $(SEQUENCERPV)/pvCa.cc
 SOURCES += $(SEQUENCERDEV)/devSequencer.c
 
 
-BINS += O.$(T_A)/lemon
-BINS += O.$(T_A)/snc
+# Why!!!!
+
+TEMP_PATH :=$(where_am_I)O.$(EPICSVERSION)_$(T_A)
+LEMON     :=$(TEMP_PATH)/bin/lemon
+SNC       :=$(TEMP_PATH)/bin/snc
+LEMON_HOST:=$(where_am_I)O.$(EPICSVERSION)_$(EPICS_HOST_ARCH)/bin/lemon
+
+# We are not using the snc while compiling E3 modules (no test, 
+SNC_HOST:=$(where_am_I)O.$(EPICSVERSION)_$(EPICS_HOST_ARCH)/bin/snc
+
+
+BINS += $(LEMON)
+BINS += $(SNC)
 
 
 USR_CPPFLAGS += -DPVCA
 
 
-vpath %.c   $(where_am_I)/$(SEQUENCERSNC)
-vpath %.h   $(where_am_I)/$(SEQUENCERSNC)
+vpath %.c   $(where_am_I)$(SEQUENCERSNC)
+vpath %.h   $(where_am_I)$(SEQUENCERSNC)
 
-vpath %.lem $(where_am_I)/$(SEQUENCERSNC)
-vpath %.lt  $(where_am_I)/$(SEQUENCERSNC)
-vpath %.re  $(where_am_I)/$(SEQUENCERSNC)
+vpath %.lem $(where_am_I)$(SEQUENCERSNC)
+vpath %.lt  $(where_am_I)$(SEQUENCERSNC)
+vpath %.re  $(where_am_I)$(SEQUENCERSNC)
 
 
-devSequencer$(DEP): $(COMMON_DIR)/seq_release.h O.${EPICSVERSION}_$(T_A)/snc
+devSequencer$(DEP): $(COMMON_DIR)/seq_release.h $(SNC)
+	@echo  $(HOSTEXE)
 
 $(COMMON_DIR)/seq_release.h:
-	echo "$(COMMON_DIR) O.${EPICSVERSION}_$(T_A)"
+#	@echo "$(COMMON_DIR) O.${EPICSVERSION}_$(T_A)"
 	$(RM) $@
-	$(PERL) $(where_am_I)/$(SEQUENCERSEQ)/seq_release.pl $(SEQ_VER) > $@
+	$(PERL) $(where_am_I)$(SEQUENCERSEQ)/seq_release.pl $(SEQ_VER) > $@
 
 
 # We only use linux, so I added $(OP_SYS_LDFLAGS) $(ARCH_DEP_LDFLAGS)
-O.${EPICSVERSION}_$(T_A)/snc: lexer.c $(patsubst %.c,%.o, lexer.c snl.c main.c expr.c var_types.c analysis.c gen_code.c gen_ss_code.c gen_tables.c builtin.c  sym_table.c )
+$(SNC): lexer.c $(patsubst %.c,%.o, lexer.c snl.c main.c expr.c var_types.c analysis.c gen_code.c gen_ss_code.c gen_tables.c builtin.c  sym_table.c )
 	@echo ""
 	@echo ">>>>> snc Init "
 	$(CCC) -o $@ -L $(EPICS_BASE_LIB) -Wl,-rpath,$(EPICS_BASE_LIB) $(OP_SYS_LDFLAGS) $(ARCH_DEP_LDFLAGS)  $(filter %.o, $^) -lCom -ldbRecStd -ldbCore -lca 
@@ -111,10 +124,9 @@ O.${EPICSVERSION}_$(T_A)/snc: lexer.c $(patsubst %.c,%.o, lexer.c snl.c main.c e
 lexer.c: snl.re snl.h
 	re2c -s -b -o $@ $<
 
-snl.c snl.h: $(addprefix $(where_am_I)/$(SEQUENCERSNC)/, snl.lem snl.lt) lemon
+snl.c snl.h: $(addprefix $(where_am_I)$(SEQUENCERSNC)/, snl.lem snl.lt) $(LEMON)
 	$(RM) snl.c snl.h
-	O.${EPICSVERSION}_$(T_A)/lemon o=. $<
-
+	$(LEMON_HOST) o=. $<
 
 # 
 # lemon is called in the host, so the hard-coded gcc, which is the host
@@ -130,11 +142,12 @@ snl.c snl.h: $(addprefix $(where_am_I)/$(SEQUENCERSNC)/, snl.lem snl.lt) lemon
 #
 # $(LINK.c) doesn't work, because it use driver.makefile instead of EPICS BASE
 #
-lemon: $(where_am_I)/$(SEQUENCERLEMON)/lemon.c
+$(LEMON): $(where_am_I)$(SEQUENCERLEMON)/lemon.c
 	@echo ""
 	@echo ">>>>> lemon Init "
-	$(RM) O.${EPICSVERSION}_$(T_A)/$@
-	$(COMPILE.c) -o O.${EPICSVERSION}_$(T_A)/$@ $(OP_SYS_CFLAGS) $(ARCH_DEP_CFLAGS) $^
+	$(RM) $@
+	$(MKDIR) -p $(TEMP_PATH)/bin
+	$(COMPILE.c) -o $(LEMON) $(OP_SYS_CFLAGS) $(ARCH_DEP_CFLAGS) $^
 	@echo "<<<<< lemon Done "
 	@echo ""
 
