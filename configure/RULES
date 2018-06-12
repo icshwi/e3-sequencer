@@ -7,6 +7,8 @@ include $(TOP)/configure/E3/RULES_E3
 include $(TOP)/configure/E3/RULES_E3_SITELIBS
 include $(TOP)/configure/E3/RULES_EPICS
 
+-include $(TOP)/configure/E3/RULES_CERT
+
 include $(TOP)/configure/E3/RULES_DB
 include $(TOP)/configure/E3/RULES_VARS
 

@@ -1,0 +1,18 @@
+
+CERT_NAME := bessyde.crt
+CERT_TARGET := /usr/local/share/ca-certificates
+
+
+# Always SUDO is needed
+        
+cert:
+	$(QUIET) sudo install -m 644 $(TOP)/certs/$(CERT_NAME) $(CERT_TARGET)/
+	$(QUIET) sudo update-ca-certificates
+
+cert_clean:
+	sudo rm -f $(CERT_TARGET)/$(CERT_NAME)
+	$(QUIET) sudo update-ca-certificates	
+
+
+.PHONY: cert cert_clean
+

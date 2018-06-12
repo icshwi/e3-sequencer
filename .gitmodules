@@ -1,4 +1,4 @@
 [submodule "sequencer"]
 	path = sequencer
-	url = http://www-csr.bessy.de/control/SoftDist/sequencer/repo/branch-2-1.git
+	url = https://www-csr.bessy.de/control/SoftDist/sequencer/repo/branch-2-1.git
 	ignore = all
